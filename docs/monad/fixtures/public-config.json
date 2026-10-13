@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "network": {
+    "name": "Monad Testnet",
+    "chainId": 10143,
+    "nativeCurrency": {
+      "name": "MON",
+      "symbol": "MON",
+      "decimals": 18
+    },
+    "rpcUrls": {
+      "default": "https://testnet-rpc.monad.xyz",
+      "public": [
+        "https://testnet-rpc.monad.xyz"
+      ]
+    },
+    "blockExplorers": {
+      "default": {
+        "name": "MonadScan",
+        "url": "https://testnet.monadscan.com"
+      },
+      "monadVision": {
+        "name": "MonadVision",
+        "url": "https://testnet.monadvision.com"
+      }
+    }
+  },
+  "contracts": {
+    "mockUsdt": {
+      "name": "ArchavaMockUSDT",
+      "address": "0xe268ce1ad255f8d32bfa9a7f9feef3eabf45b39c",
+      "decimals": 6,
+      "symbol": "mUSDT",
+      "faucetAmount": "100000000",
+      "abiPath": "packages/contracts/out/ArchavaMockUSDT.sol/ArchavaMockUSDT.json"
+    },
+    "rentalV2": {
+      "name": "ArchavaRentalV2",
+      "address": "0x7324a2678e74052a4e9a244c0d57b56b23fee6ad",
+      "paymentTokenSymbol": "mUSDT",
+      "abiPath": "packages/contracts/out/ArchavaRentalV2.sol/ArchavaRentalV2.json"
+    }
+  },
+  "packages": [
+    {
+      "packageId": 1,
+      "name": "Starter",
+      "displayPriceIdr": 79000,
+      "priceMusdt": "4.9375",
+      "priceUnits": "4937500",
+      "includedMinutes": 60,
+      "validityDays": 30
+    },
+    {
+      "packageId": 2,
+      "name": "Pro",
+      "displayPriceIdr": 299000,
+      "priceMusdt": "18.6875",
+      "priceUnits": "18687500",
+      "includedMinutes": 300,
+      "validityDays": 30
+    }
+  ],
+  "creditRules": {
+    "starterMinutes": 60,
+    "proMinutes": 300,
+    "tokenDecimals": 6,
+    "validityDurationSeconds": 2592000
+  }
+}

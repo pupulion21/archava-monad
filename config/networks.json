@@ -1,0 +1,33 @@
+{
+  "$schema": "./networks.schema.json",
+  "networks": {
+    "monadTestnet": {
+      "chainId": 10143,
+      "chainIdHex": "0x279f",
+      "name": "Monad Testnet",
+      "nativeCurrency": {
+        "name": "MON",
+        "symbol": "MON",
+        "decimals": 18
+      },
+      "rpcUrls": {
+        "default": {
+          "http": ["https://testnet-rpc.monad.xyz"]
+        },
+        "public": {
+          "http": ["https://testnet-rpc.monad.xyz"]
+        }
+      },
+      "blockExplorer": {
+        "name": "Monad Testnet Explorer",
+        "url": "https://testnet.monadscan.com"
+      },
+      "testnet": true,
+      "finalizationBlocks": 1,
+      "blockTime": 400,
+      "description": "Monad Testnet - EVM-compatible chain with 10,000 TPS and 400ms block time"
+    }
+  },
+  "active": "monadTestnet",
+  "deployments": {}
+}

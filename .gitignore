@@ -1,0 +1,38 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+__pycache__/
+.venv/
+*.pyc
+*.log
+# Customer API key digests and the metered usage ledger are runtime state, not
+# source; a committed copy would expose every issued key's digest.
+data/
+*.tsbuildinfo
+.vercel/
+.vercel
+.tmp-test/
+.ruff_cache/
+.session-test-*/
+.minute-test-*/
+.http-test-*/
+archava-bootstrap-*/
+# Temporary test state and local diagnostics are not source.
+/archava-cache-*/
+/archava-customer-*/
+/archava-keys-*/
+/archava-usage-*/
+/s03-repro-*/
+/.minute-http-*/
+/diag-*.mjs
+# Local agent settings, hosting linkage, and the nested legacy checkout.
+/.claude/
+/.railway/
+/Archava-Monad/
+packages/indexer/.envio/
+# Internal agent transcripts and outdated operator/submission drafts stay local.
+coordination/
+submission/
+ops/

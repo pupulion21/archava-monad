@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Deployment Targets Configuration",
+  "description": "Configuration schema for deployment targets and validation requirements",
+  "type": "object",
+  "required": ["version", "deployment", "network", "hosting", "livekit", "state"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Configuration version"
+    },
+    "deployment": {
+      "type": "string",
+      "description": "Deployment identifier"
+    },
+    "description": {
+      "type": "string"
+    },
+    "git": {
+      "type": "object",
+      "properties": {
+        "remoteUrl": { "type": "string" },
+        "remoteName": { "type": "string" },
+        "defaultBranch": { "type": "string" }
+      }
+    },
+    "network": {
+      "type": "object",
+      "required": ["chainId", "name"],
+      "properties": {
+        "chainId": { "type": "number" },
+        "name": { "type": "string" },
+        "rpc": { "type": "object" }
+      }
+    },
+    "hosting": {
+      "type": "object",
+      "properties": {
+        "frontend": { "type": "object" },
+        "backend": {
+          "type": "object",
+          "properties": {
+            "projectId": { "type": "string" },
+            "environmentId": { "type": "string" },
+            "serviceId": { "type": "string" },
+            "serviceName": { "type": "string" },
+            "publicUrl": {
+              "type": "string",
+              "description": "Canonical Railway backend origin that Vercel rewrites /api/* and /v1/* to. Empty until provisioned; the deploy guard rejects an empty value instead of falling back to a guessed host."
+            }
+          }
+        }
+      }
+    },
+    "livekit": {
+      "type": "object",
+      "required": ["projectScope", "agentName"],
+      "properties": {
+        "url": { "type": "string" },
+        "projectScope": { "type": "string" },
+        "agentName": { "type": "string" }
+      }
+    },
+    "state": {
+      "type": "object",
+      "required": ["directory", "scope"],
+      "properties": {
+        "directory": { "type": "string" },
+        "scope": { "type": "string" }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "requiredForPush": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "requiredForDeploy": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "requiredForRuntime": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

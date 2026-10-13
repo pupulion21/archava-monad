@@ -1,0 +1,12 @@
+type AccessRented {
+  id: ID!
+  wallet: String! @index
+  packageId: Int!
+  includedMinutes: BigInt!
+  expiresAt: BigInt!
+  amountPaid: BigInt!
+  transactionHash: String!
+  blockNumber: Int!
+  logIndex: Int!
+  timestamp: Int!
+}

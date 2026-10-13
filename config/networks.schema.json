@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Archava Network Configuration",
+  "description": "Network and deployment configuration for Archava on different chains",
+  "type": "object",
+  "required": ["networks", "active"],
+  "properties": {
+    "networks": {
+      "type": "object",
+      "description": "Available network configurations",
+      "patternProperties": {
+        "^[a-zA-Z0-9]+$": {
+          "type": "object",
+          "required": ["chainId", "chainIdHex", "name", "nativeCurrency", "rpcUrls", "blockExplorer"],
+          "properties": {
+            "chainId": {
+              "type": "number",
+              "description": "Numeric chain ID"
+            },
+            "chainIdHex": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]+$",
+              "description": "Hex-encoded chain ID"
+            },
+            "name": {
+              "type": "string",
+              "description": "Human-readable network name"
+            },
+            "nativeCurrency": {
+              "type": "object",
+              "required": ["name", "symbol", "decimals"],
+              "properties": {
+                "name": { "type": "string" },
+                "symbol": { "type": "string" },
+                "decimals": { "type": "number" }
+              }
+            },
+            "rpcUrls": {
+              "type": "object",
+              "description": "RPC endpoint URLs"
+            },
+            "blockExplorer": {
+              "type": "object",
+              "required": ["name", "url"],
+              "properties": {
+                "name": { "type": "string" },
+                "url": { "type": "string", "format": "uri" }
+              }
+            },
+            "testnet": {
+              "type": "boolean",
+              "description": "Whether this is a test network"
+            },
+            "finalizationBlocks": {
+              "type": "number",
+              "description": "Number of blocks for finalization"
+            },
+            "blockTime": {
+              "type": "number",
+              "description": "Average block time in milliseconds"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "active": {
+      "type": "string",
+      "description": "Currently active network key"
+    },
+    "deployments": {
+      "type": "object",
+      "description": "Deployment-specific configuration per network",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "rentalContract": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "paymentToken": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$"
+          },
+          "deploymentBlock": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  }
+}

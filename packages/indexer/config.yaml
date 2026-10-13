@@ -1,0 +1,16 @@
+name: archava-monad-indexer
+field_selection:
+  transaction_fields:
+    - hash
+contracts:
+  - name: ArchavaRentalV2
+    handler: ./src/EventHandlers.ts
+    events:
+      - event: "AccessRented(address indexed wallet, uint8 indexed packageId, uint256 includedMinutes, uint256 expiresAt, uint256 amountPaid)"
+chains:
+  - id: 10143
+    start_block: 70191614
+    contracts:
+      - name: ArchavaRentalV2
+        address:
+          - "0x7324a2678e74052a4e9a244c0d57b56b23fee6ad"

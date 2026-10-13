@@ -1,0 +1,63 @@
+{
+  "$schema": "./deployment-targets.schema.json",
+  "version": "1",
+  "deployment": "monad",
+  "description": "Archava Monad Testnet deployment targets and identifiers",
+  "git": {
+    "remoteUrl": "https://github.com/pupulion21/archava-monad.git",
+    "remoteName": "origin",
+    "defaultBranch": "main",
+    "comment": "Independent Monad repository; hosting projects are provisioned separately"
+  },
+  "network": {
+    "chainId": 10143,
+    "name": "monadTestnet",
+    "rpc": {
+      "public": "https://testnet-rpc.monad.xyz",
+      "comment": "Private RPC URL stored in env, not in this public config"
+    }
+  },
+  "hosting": {
+    "frontend": {
+      "provider": "vercel",
+      "projectId": "",
+      "projectName": "",
+      "productionDomain": "",
+      "comment": "Will be set after Vercel project is provisioned"
+    },
+    "backend": {
+      "provider": "railway",
+      "projectId": "",
+      "environmentId": "",
+      "serviceId": "",
+      "serviceName": "archava-monad-backend",
+      "comment": "Will be set after Railway project/service is provisioned"
+    }
+  },
+  "livekit": {
+    "url": "wss://receptionist-lwypqvqa.livekit.cloud",
+    "projectScope": "archava-monad",
+    "agentName": "archava-monad-host",
+    "comment": "URL will be set after LiveKit project is created. Credentials in env."
+  },
+  "state": {
+    "directory": "./data",
+    "scope": "monad",
+    "comment": "Separate from BNB deployment state"
+  },
+  "validation": {
+    "requiredForPush": [
+      "git.remoteUrl"
+    ],
+    "requiredForDeploy": [
+      "hosting.frontend.projectId",
+      "hosting.backend.projectId"
+    ],
+    "requiredForRuntime": [
+      "network.chainId",
+      "livekit.url",
+      "state.scope"
+    ]
+  },
+  "lastUpdated": "2026-10-11T00:00:00Z"
+}
