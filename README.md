@@ -40,9 +40,10 @@ This is an **independent deployment** specifically for Monad Metropolis. It uses
 
 ### 3. Indexer Sponsor: Envio HyperIndex
 - **Dedicated Indexer Package (`packages/indexer`)**: Built with Envio HyperIndex 3.x, tracking `AccessRented` events emitted by `ArchavaRentalV2` starting at block `70191614`.
-- **Backend History Service (`server/purchases.mjs`)**: Endpoint `GET /api/purchases?wallet=...` providing authenticated, deduplicated, and bounded pagination.
+- **Backend History Service (`server/purchases.mjs`)**: Public endpoint `GET /api/purchases?wallet=...` providing wallet-scoped, deduplicated, and bounded pagination.
 - **Authoritative Credit Isolation**: Envio feeds public transaction history and synchronization metadata (`_meta`). Authoritative access permissions remain strictly bound to direct finalized onchain contract state, ensuring indexer latency never blocks paid usage.
 - **Interactive Feed on `/build`**: Displays indexed purchases with direct MonadScan explorer links and visual indicators for pending, syncing, or offline states.
+- **Live cloud verification (2026-10-13)**: `pupulion21/archava-monad-indexer` indexed 6 real events; all matched finalized Monad receipts. The local API is connected. See [S06 evidence](docs/monad/S06-evidence.md#7-verifikasi-envio-cloud-aktual-2026-10-13) for the endpoint and provisioning details.
 
 ### 4. Developer Dashboard & Session API
 - **Challenge-Response Wallet Signatures**: Purpose-bound authentication messages prevent cross-context replay attacks.
@@ -62,7 +63,7 @@ cd archava-monad
 The Foundry test library is vendored in `packages/contracts/lib/forge-std`, with its upstream license files included. No Git submodule initialization is required. Local credentials, runtime state, test-generated stores, diagnostics, and the nested legacy checkout are excluded from version control and deployment uploads.
 
 ### Prerequisites
-- Node.js 22.18+ (npm 10+)
+- Node.js 22.18+ for the app; Node.js 24+ for the indexer and CI (npm 10+)
 - Python 3.12 or 3.13 (with `uv` recommended)
 - Google Chrome or Microsoft Edge (supporting `RTCRtpScriptTransform` for Spatius avatar streaming)
 

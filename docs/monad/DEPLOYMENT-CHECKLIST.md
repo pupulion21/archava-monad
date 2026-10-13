@@ -4,8 +4,7 @@
 > This checklist covers the **new Monad repository** only.
 > The original Archava (BNB, `archava.vercel.app`) must not be touched.
 >
-> Deployment order is: **new GitHub repository → Railway → Vercel → Envio Cloud.**
-> GitHub repository creation, remote configuration, and push are operator-owned.
+> The new GitHub repository is connected. Envio Cloud can be provisioned after GitHub; it is now live. Continue with **Railway → Vercel**, and configure the Envio endpoint in Railway.
 
 ---
 
@@ -206,12 +205,19 @@ build and live GraphQL verification. See the official [Cloud CLI reference](http
 and [build requirements](https://docs.envio.dev/docs/HyperIndex/envio-cloud-troubleshooting).
 
 ### 3.2 Provision the endpoint and credentials
-- [ ] From the Envio Cloud indexer, copy the **GraphQL endpoint URL**.
+- [x] Live endpoint for deployment `84e9481`: `https://indexer.dev.hyperindex.xyz/3764374/v1/graphql`.
+- [x] Configured local `.env` and restarted the API; the Vite proxy returns real wallet purchase history with `sync.isReady: true`.
 - [ ] If the deployment is private, copy the **API key**.
-- [ ] Store both **server-side only** — never in `VITE_*` and never in the frontend bundle.
+- [x] This deployment uses public access on the free development tier; no `ENVIO_API_KEY` is needed.
+- [x] Local environment remains Git-ignored. Configure Envio values in the backend environment.
+
+The URL above is specific to the verified deployment. When changing deployments,
+obtain the new endpoint from Envio and validate it before updating the backend.
+Development deployments expire after 30 days under the current [fair-use policy](https://docs.envio.dev/docs/HyperIndex/hosted-service-deployment#development-plan-fair-usage-policy);
+this free endpoint is suitable for the testnet demo, not permanent hosting.
 
 ### 3.3 Update Railway
-- [ ] Set `ENVIO_GRAPHQL_URL=<provisioned endpoint>`.
+- [ ] Set `ENVIO_GRAPHQL_URL=https://indexer.dev.hyperindex.xyz/3764374/v1/graphql` (or the newly verified endpoint after replacing the deployment).
 - [ ] Set `ENVIO_API_KEY=<key>` if the deployment is private.
 - [ ] Redeploy Railway.
 

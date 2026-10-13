@@ -131,3 +131,51 @@ Paket `packages/indexer` di-deploy ke Envio Cloud via alur berbasis Git (bukan p
 - Operator menghubungkan repositori Monad baru melalui Envio App dan mengatur **root directory** ke `packages/indexer`.
 - Envio Cloud melakukan build dan index dari branch deployment (start block `70191614`, chain `10143`).
 - Endpoint GraphQL hasil deployment disetel ke `ENVIO_GRAPHQL_URL` (dan `ENVIO_API_KEY` bila privat) pada environment server (Railway), hanya di sisi server.
+
+## 7. Verifikasi Envio Cloud Aktual (2026-10-13)
+
+- Organisasi: `pupulion21`; indexer: `archava-monad-indexer`.
+- Repository: `https://github.com/pupulion21/archava-monad`; branch: `main`.
+- Root: `packages/indexer`; config: `config.yaml`.
+- Tier: development (gratis); access: public; tidak membutuhkan `ENVIO_API_KEY`.
+- Deployment yang diverifikasi: `84e9481`.
+- GraphQL: `https://indexer.dev.hyperindex.xyz/3764374/v1/graphql`.
+- Snapshot verifikasi receipt: `2026-10-13T12:43:18.326Z`; finalized block `70684741`.
+
+Cloud memproses 6 event `AccessRented` asli pada chain `10143`, mulai blok
+`70191614`. Seluruh 6 event dibandingkan dengan receipt finalized yang sukses:
+alamat kontrak, transaction hash, log index, buyer wallet, package ID, menit,
+expiresAt, dan amountPaid cocok. ID komposit tidak duplikat. Snapshot `_meta`
+menunjukkan `isReady: true` dan `eventsProcessed: 6`.
+
+Endpoint telah diisi di `.env` lokal tanpa mengubah nilai credential lain. API
+direstart setelah pemeriksaan LiveKit menemukan 0 room dengan scope deployment
+ini. Request melalui proxy Vite:
+
+```text
+GET http://localhost:5174/api/purchases?wallet=0xb1605fda339e4a8672d716690b91af63206080ef&limit=10
+HTTP 200; ok=true; purchases=3; status=synced
+sync.chainId=10143; sync.isReady=true; sync.numBlocksBehind=0
+sync.progressBlock=70685209; sync.sourceBlock=70685209
+```
+
+Perbaikan deployment yang dibuktikan pada cloud:
+
+1. Pin SDK `envio` ke `3.14.0` karena cloud menolak version range.
+2. Deklarasi `"type": "module"` supaya runtime SDK dapat memuat handler TypeScript.
+3. Dua regression tests di `packages/indexer/test/runtime.test.mjs` menggunakan
+   loader SDK asli: handler production berhasil dimuat; fixture tanpa deklarasi
+   ESM mereproduksi penolakan cloud.
+4. GitHub Actions menginstal, melakukan codegen, typecheck, dan menjalankan test
+   indexer dengan Node 24. Semua langkah indexer lulus pada run `38398992840`.
+
+Checks lokal: codegen PASS; typecheck PASS; 2 runtime tests PASS; 18 purchase/history
+tests PASS. Pemeriksaan CI juga menemukan import `typing.Any` yang hilang di
+worker untuk Python 3.12; import diperbaiki dan 111 backend tests lulus pada
+Python lokal serta Python 3.12.15 di container. Status pipeline cloud lengkap
+dilacak terpisah dari keberhasilan indexer.
+
+Railway dan Vercel belum diprovisioning. Saat Railway dibuat, isi endpoint di atas
+sebagai `ENVIO_GRAPHQL_URL` pada backend. Deployment development mempunyai masa
+hidup terbatas menurut [fair-use policy Envio](https://docs.envio.dev/docs/HyperIndex/hosted-service-deployment#development-plan-fair-usage-policy);
+validasi endpoint lagi bila deployment diganti atau kedaluwarsa.

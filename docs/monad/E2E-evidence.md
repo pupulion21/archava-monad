@@ -209,12 +209,21 @@ The installed `envio` CLI (v3.14) exposes `init`, `dev`, `stop`, `codegen`,
 `login` or `deploy` command**. Deployment is therefore the git-based Envio Cloud
 workflow (see `DEPLOYMENT-CHECKLIST.md`, Phase 3).
 
-### Cloud status: pending operator deployment
+### Cloud status: live and verified (2026-10-13)
 
-`ENVIO_GRAPHQL_URL` is not set in the local environment, so `/api/config`
-reports `envioConfigured: false` and `GET /api/purchases` returns a bounded
-`503`/`unavailable` result by design. **Live Envio integration is pending** and
-has not been validated against a real GraphQL endpoint.
+The separate `envio-cloud@1.0.0` CLI authenticated as `pupulion21` and provisioned
+`archava-monad-indexer` from `pupulion21/archava-monad`, branch `main`, root
+`packages/indexer`, configuration `config.yaml`, public development tier.
+Deployment `84e9481` serves `https://indexer.dev.hyperindex.xyz/3764374/v1/graphql`.
+Six real `AccessRented` events were indexed; every event matched a successful
+finalized receipt from the canonical Monad rental contract. `_meta` reports
+chain `10143`, start block `70191614`, and `isReady: true`.
+
+`ENVIO_GRAPHQL_URL` is set in the Git-ignored local `.env`. The API was restarted
+after confirming no scoped LiveKit rooms were active. Through Vite on port 5174,
+`GET /api/purchases` returned HTTP 200, `synced`, lag 0, and 3 purchases for the
+tested buyer. Railway environment configuration remains pending provisioning.
+Full cloud/runtime evidence is in [S06-evidence.md](S06-evidence.md#7-verifikasi-envio-cloud-aktual-2026-10-13).
 
 > [!NOTE]
 > Envio history is separate from authoritative finalized credit. The scanner
@@ -289,11 +298,12 @@ The application consumes the variables listed in `.env.example`. Notable points:
 
 ### Operator tasks remaining
 
-- [ ] Create the new GitHub repository and push (operator-owned).
+- [x] New GitHub repository populated: `pupulion21/archava-monad`, branch `main`.
 - [ ] Create Railway project/service; set runtime secrets; mount `/app/data`.
 - [ ] Provide the Docker build arg `VITE_PRIVY_APP_ID` on Railway (the image builds the frontend).
 - [ ] Deploy the frontend to Vercel; add the Vercel origin to the Privy allowlist.
-- [ ] Deploy `packages/indexer` via Envio Cloud; set `ENVIO_GRAPHQL_URL`/`ENVIO_API_KEY` on Railway.
+- [x] Deploy `packages/indexer` via Envio Cloud and verify live history locally.
+- [ ] Set the verified `ENVIO_GRAPHQL_URL` on Railway. Public development access does not require an API key.
 - [ ] Perform the live Privy login, purchase, and paid-session flow.
 
 ---
@@ -311,7 +321,7 @@ The application consumes the variables listed in `.env.example`. Notable points:
 | Envio integration (local tests) | ✅ 18 tests pass |
 | Live avatar preview (synthetic media) | ✅ 8/8 checks pass (end-call verified via locator click) |
 | Human wallet acceptance (local) | ⏳ Pending operator (see 8b) |
-| Envio Cloud endpoint | ⏳ Pending operator |
+| Envio Cloud endpoint | ✅ Live; 6 real events matched finalized receipts; local API connected |
 | Privy login (human-confirmed) | ⏳ Pending operator |
 | Purchase + paid session | ⏳ Pending operator |
 | Railway / Vercel deployment | ⏳ Pending operator |
