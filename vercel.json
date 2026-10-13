@@ -6,11 +6,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://archava-monad-backend.up.railway.app/api/:path*"
+      "destination": "https://archava-monad-production.up.railway.app/api/:path*"
     },
     {
       "source": "/v1/:path*",
-      "destination": "https://archava-monad-backend.up.railway.app/v1/:path*"
+      "destination": "https://archava-monad-production.up.railway.app/v1/:path*"
     },
     {
       "source": "/build",

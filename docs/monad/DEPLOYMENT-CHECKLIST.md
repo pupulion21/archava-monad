@@ -45,18 +45,21 @@
 - [ ] Add **one** service: the API and the voice worker run in the same container via `entrypoint.sh`.
 - [ ] Connect the **new Monad GitHub repository** (NOT the old Archava repo).
 - [ ] Set the root directory to `/` (repo root).
-- [ ] Build: Dockerfile at `Dockerfile` (matches `railway.json`).
+- [ ] Build: the root `Dockerfile` is detected automatically. Optionally set
+      `RAILWAY_DOCKERFILE_PATH=Dockerfile`; leave custom build/start commands empty.
+- [ ] Configure `/api/ready` as the healthcheck, one replica, restart on failure
+      (10 retries), and disable Serverless in the dashboard. New services cannot
+      opt into legacy `railway.json` Config as Code; configure these settings
+      manually. See <https://docs.railway.com/config-as-code>.
 
 ### 1.2 Persistent volume
 - [ ] Add a Railway **volume** mounted at `/app/data`.
 - [ ] This holds the API-key digests and the paid-minute usage ledger.
 - [ ] **Single-writer rule:** the store is file-based and is not safe for
-      concurrent writers. Run exactly one replica (`numReplicas: 1` in
-      `railway.json`). During a deployment transition, Railway starts the new
-      container before stopping the old one, so briefly two processes can touch
-      the volume — use Railway's zero-downtime/overlap settings only if the
-      volume is not shared, otherwise stop the old container first. Never scale
-      to two replicas.
+      concurrent writers. Set exactly one replica in the dashboard. Railway
+      prevents simultaneous active deployments from mounting the same volume,
+      so volume-backed redeployments include a short interruption. Never scale
+      to two replicas. See <https://docs.railway.com/deployments/healthchecks>.
 
 ### 1.3 Runtime environment (Railway variables)
 
@@ -91,8 +94,8 @@ SPATIUS_AVATAR_ID=82d7dce9-ec05-4102-969f-2fe341af28cd
 
 # Monad Testnet
 CHAIN_ID=10143
-# Optional: defaults to the public endpoint https://testnet-rpc.monad.xyz
-RPC_URL=
+# Required by the runtime guard; replace with a dedicated endpoint if available.
+RPC_URL=https://testnet-rpc.monad.xyz
 RENTAL_CONTRACT=0x7324a2678e74052a4e9a244c0d57b56b23fee6ad
 PAYMENT_TOKEN_CONTRACT=0xe268ce1ad255f8d32bfa9a7f9feef3eabf45b39c
 RENTAL_DEPLOYMENT_BLOCK=70191614
@@ -101,10 +104,16 @@ RENTAL_DEPLOYMENT_BLOCK=70191614
 ENABLE_PREVIEW=true
 PREVIEW_SECONDS=120
 
-# Envio (set in Phase 3)
-ENVIO_GRAPHQL_URL=
+# Public Envio deployment verified in Phase 3
+ENVIO_GRAPHQL_URL=https://indexer.dev.hyperindex.xyz/3764374/v1/graphql
 ENVIO_API_KEY=
 ```
+
+Before Vercel is provisioned, use the actual Railway HTTPS origin for
+`WEB_ORIGIN`. In Railway's individual variable editor, enter only the value:
+for `ARCHAVA_WORKER_HEALTH_URL`, enter `http://127.0.0.1:8081/`, without the
+`ARCHAVA_WORKER_HEALTH_URL=` prefix. In Raw Editor, use complete `NAME=value`
+lines. Local `.env` files are not uploaded to Railway.
 
 > [!NOTE]
 > `PRIVY_APP_SECRET` and `DATABASE_URL` are **not consumed** by any implemented
@@ -132,9 +141,16 @@ stage where they are used** (here, the `frontend` stage):
 Reference: <https://docs.railway.com/builds/dockerfiles> → "Using variables at build time".
 
 ### 1.5 Verify the Railway deployment
-- [ ] `GET https://<railway-url>/api/ready` → `{"ok":true,"checks":{"api":"ok","worker":"ok"}}`
-- [ ] `GET https://<railway-url>/api/config` → chainId 10143, canonical addresses, `envioConfigured` once Phase 3 is done
-- [ ] `GET https://<railway-url>/api/health` → `{"ok":true}`
+- [x] `GET https://archava-monad-production.up.railway.app/api/ready` → HTTP 200,
+      `{"ok":true,"checks":{"api":"ok","worker":"ok"}}`
+- [x] `GET https://archava-monad-production.up.railway.app/api/config` → HTTP 200,
+      chainId 10143, canonical addresses, `livekitReady: true`,
+      `envioConfigured: true`, and a 120-second enabled preview.
+- [x] `GET https://archava-monad-production.up.railway.app/api/health` → HTTP 200,
+      `{"ok":true}`
+
+Public checks observed on 2026-10-13 at 14:50 UTC. These establish API and worker
+health; a public microphone/voice session remains a separate acceptance check.
 
 ---
 
@@ -155,7 +171,8 @@ VITE_PRIVY_APP_ID=cmv6bk69u002z0fl8k77qer3t
 
 ### 2.3 Update `vercel.json` rewrites
 `vercel.json` proxies `/api/*` and `/v1/*` to the Railway backend.
-- [ ] Replace `https://archava-monad-backend.up.railway.app` with the actual Railway service URL.
+- [x] Both `/api/*` and `/v1/*` rewrites target the verified Railway origin:
+      `https://archava-monad-production.up.railway.app`.
 
 ### 2.4 Set Railway `WEB_ORIGIN`
 - [ ] After Vercel assigns a domain, set Railway `WEB_ORIGIN` to that exact HTTPS origin and redeploy Railway.

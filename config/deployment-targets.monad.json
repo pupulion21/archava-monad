@@ -30,8 +30,9 @@
       "projectId": "",
       "environmentId": "",
       "serviceId": "",
-      "serviceName": "archava-monad-backend",
-      "comment": "Will be set after Railway project/service is provisioned"
+      "serviceName": "archava-monad",
+      "publicUrl": "https://archava-monad-production.up.railway.app",
+      "comment": "Public Railway origin verified; project, environment, and service IDs still need to be recorded from Railway"
     }
   },
   "livekit": {
@@ -59,5 +60,5 @@
       "state.scope"
     ]
   },
-  "lastUpdated": "2026-10-11T00:00:00Z"
+  "lastUpdated": "2026-10-13T14:50:35Z"
 }
