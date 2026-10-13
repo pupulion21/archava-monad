@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Envio HyperIndex for ArchavaRentalV2 on Monad Testnet (10143)",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "codegen": "envio codegen",
     "build": "envio codegen",
@@ -10,7 +13,7 @@
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
-    "envio": "^3.14.0"
+    "envio": "3.14.0"
   },
   "devDependencies": {
     "@types/node": "^22.5.5",

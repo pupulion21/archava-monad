@@ -175,7 +175,7 @@ VITE_PRIVY_APP_ID=cmv6bk69u002z0fl8k77qer3t
 
 ## Phase 3 — Envio HyperIndex (Envio Cloud)
 
-The installed `envio` CLI (`^3.14`) exposes `init`, `dev`, `stop`, `codegen`,
+The installed `envio` CLI (`3.14.0`) exposes `init`, `dev`, `stop`, `codegen`,
 `local`, `start`, `metrics`, `skills`, `tools`, and `config`. It has **no
 `login` or `deploy` command**. Deploy through Envio Cloud's git-based workflow:
 <https://docs.envio.dev/docs/HyperIndex/hosted-service-deployment>.
@@ -185,8 +185,24 @@ The installed `envio` CLI (`^3.14`) exposes `init`, `dev`, `stop`, `codegen`,
 2. Click **Add Indexer** and connect the **new Monad repository**.
 3. Set **root directory** to `packages/indexer` (monorepo). Ensure imports stay inside that directory.
 4. Set the **config file path** to `config.yaml` and choose the deployment branch.
-5. Confirm `packages/indexer/package.json` declares `envio` in `dependencies` and requires Node ≥ 24.
+5. Confirm `packages/indexer/package.json` pins `envio` to the exact installed version (`3.14.0`) in `dependencies` and declares Node ≥ 24. Envio Cloud rejects version ranges; it resolves dependencies independently of the lockfile.
 6. Push the deployment branch; Envio Cloud builds and indexes from the configured start block (`70191614`) and chain (`10143`).
+
+The separate `envio-cloud` CLI can manage the same Git-based deployment. The
+initial cloud indexer was provisioned on 2026-10-13 with:
+
+```bash
+npx --yes envio-cloud@1.0.0 login
+npx --yes envio-cloud@1.0.0 indexer add \
+  --org pupulion21 --name archava-monad-indexer --repo archava-monad \
+  --branch main --root-dir packages/indexer --config-file config.yaml \
+  --tier development --access-type public
+```
+
+For an existing indexer, inspect it with `indexer get` and `indexer commits`
+instead of creating it again. A successful creation is separate from a successful
+build and live GraphQL verification. See the official [Cloud CLI reference](https://docs.envio.dev/docs/HyperIndex/envio-cloud-cli)
+and [build requirements](https://docs.envio.dev/docs/HyperIndex/envio-cloud-troubleshooting).
 
 ### 3.2 Provision the endpoint and credentials
 - [ ] From the Envio Cloud indexer, copy the **GraphQL endpoint URL**.
