@@ -186,6 +186,7 @@ The installed `envio` CLI (`3.14.0`) exposes `init`, `dev`, `stop`, `codegen`,
 3. Set **root directory** to `packages/indexer` (monorepo). Ensure imports stay inside that directory.
 4. Set the **config file path** to `config.yaml` and choose the deployment branch.
 5. Confirm `packages/indexer/package.json` pins `envio` to the exact installed version (`3.14.0`) in `dependencies` and declares Node ≥ 24. Envio Cloud rejects version ranges; it resolves dependencies independently of the lockfile.
+   The package must also declare `"type": "module"` so the TypeScript event handler can load at runtime. Validate with `npm --prefix packages/indexer run codegen`, `npm --prefix packages/indexer run typecheck`, and `npm --prefix packages/indexer test`; codegen alone does not load the handler.
 6. Push the deployment branch; Envio Cloud builds and indexes from the configured start block (`70191614`) and chain (`10143`).
 
 The separate `envio-cloud` CLI can manage the same Git-based deployment. The

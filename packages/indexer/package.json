@@ -2,6 +2,7 @@
   "name": "archava-monad-indexer",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Envio HyperIndex for ArchavaRentalV2 on Monad Testnet (10143)",
   "engines": {
     "node": ">=24"
@@ -9,6 +10,7 @@
   "scripts": {
     "codegen": "envio codegen",
     "build": "envio codegen",
+    "typecheck": "tsc --noEmit",
     "start": "envio start",
     "test": "node --test test/*.test.mjs"
   },
