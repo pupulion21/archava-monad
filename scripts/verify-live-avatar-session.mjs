@@ -9,6 +9,8 @@ const FRONT_URL = process.env.VERIFY_FRONT_URL || "http://localhost:5174/";
  * - The free preview ("Talk to Ava") opens a LiveKit + Spatius session with
  *   synthetic headless media and renders avatar pixels.
  * - Preview controls respond to real Playwright user clicks.
+ * - The floating widget stays visible while scrolling and preserves its canvas
+ *   and audio element when minimized and expanded.
  *
  * What this script does NOT prove:
  * - Human-confirmed audible conversation (requires a human listening).
@@ -28,7 +30,8 @@ async function verifyLiveAvatar() {
   console.log("[Scope: free preview with fake headless media. Not a human audible check. Not a paid session.]");
 
   const browser = await chromium.launch({
-    headless: true,
+    executablePath: process.env.ARCHAVA_BROWSER_EXECUTABLE || undefined,
+    headless: process.env.ARCHAVA_BROWSER_HEADLESS !== "false",
     args: [
       "--use-fake-ui-for-media-stream",
       "--use-fake-device-for-media-stream",
@@ -41,6 +44,7 @@ async function verifyLiveAvatar() {
   });
 
   let context = null;
+  const startedAt = Date.now();
   try {
     // Emulate the `prefers-reduced-motion: reduce` user preference. The page sets
     // a global `scroll-behavior: smooth`, which makes Playwright's
@@ -55,12 +59,23 @@ async function verifyLiveAvatar() {
       reducedMotion: "reduce",
     });
     const page = await context.newPage();
+    const logBudget = async (step) => {
+      const timer = await page.evaluate(() => document.querySelector(".timer-digits")?.textContent?.trim() ?? "");
+      console.log(`Timing: ${step}; elapsed=${Date.now() - startedAt}ms; preview=${timer || "not mounted"}`);
+    };
+    page.on("response", async response => {
+      if (new URL(response.url()).pathname !== "/api/preview" || !response.ok()) return;
+      const result = await response.json().catch(() => null);
+      if (Number.isFinite(result?.endsAt)) {
+        console.log(`Timing: preview issued; elapsed=${Date.now() - startedAt}ms; expiresIn=${result.endsAt - Math.floor(Date.now() / 1000)}s`);
+      }
+    });
 
     console.log("1. Loading frontend at", FRONT_URL);
     await page.goto(FRONT_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForTimeout(2000);
 
-    const talkBtn = page.locator("button.catalog-demo-btn").first();
+    const talkBtn = page.locator("button.avatar-launcher");
     await talkBtn.waitFor({ state: "visible", timeout: 15000 });
     console.log("✓ 'Talk to Ava' button is visible");
 
@@ -80,7 +95,7 @@ async function verifyLiveAvatar() {
     for (let i = 0; i < 45; i++) {
       await page.waitForTimeout(1000);
       const stateText = await page.evaluate(() => {
-        return document.querySelector(".floating-agent-state")?.textContent?.trim() || "";
+        return document.querySelector(".call-dock-status")?.textContent?.trim() || "";
       });
       lastState = stateText;
       if (stateText.includes("SPEAKING")) {
@@ -173,6 +188,7 @@ async function verifyLiveAvatar() {
     console.log("✓ Remote audio element present with playback evidence (synthetic headless media; not human-confirmed audible)");
 
     console.log("7. Testing microphone mute/unmute with Playwright user clicks...");
+    await logBudget("before mic controls");
     // Production control: button.mic-control-btn toggles
     // localParticipant.setMicrophoneEnabled(). Verify via real clicks and
     // assert both transitions plus restoration. No force/JS clicks.
@@ -195,7 +211,8 @@ async function verifyLiveAvatar() {
       throw new Error(`Unexpected initial mic button state: "${initial.text}"`);
     }
 
-    await micBtn.click();
+    await micBtn.click({timeout: 10000});
+    await logBudget("first mic click");
     await page.waitForTimeout(800);
     const afterFirst = await readMicState();
     console.log(`After first click: text="${afterFirst.text}" aria-pressed="${afterFirst.ariaPressed}"`);
@@ -218,7 +235,8 @@ async function verifyLiveAvatar() {
     }
     console.log("✓ First microphone transition asserted");
 
-    await micBtn.click();
+    await micBtn.click({timeout: 10000});
+    await logBudget("second mic click");
     await page.waitForTimeout(800);
     const afterSecond = await readMicState();
     console.log(`After second click (restored): text="${afterSecond.text}" aria-pressed="${afterSecond.ariaPressed}"`);
@@ -234,7 +252,47 @@ async function verifyLiveAvatar() {
     }
     console.log("✓ Microphone mute and unmute controls verified with restoration (Playwright clicks)");
 
-    console.log("8. Testing end call with Playwright user click (before preview expiry)...");
+    console.log("8. Testing floating position and minimize/expand with the live renderer...");
+    await logBudget("before floating checks");
+    await page.evaluate(() => {
+      window.__verifiedAvatarCanvas = document.querySelector(".spatius-avatar-canvas canvas");
+      window.__verifiedAvatarAudio = document.querySelector("audio");
+    });
+    await page.locator("#business-section").scrollIntoViewIfNeeded({timeout: 10000});
+    await logBudget("after scrolling");
+    const widget = page.locator("#live-avatar-room");
+    const position = await widget.evaluate(el => {
+      const r = el.getBoundingClientRect();
+      return {fixed: getComputedStyle(el).position, left: r.left, top: r.top,
+        rightGap: document.documentElement.clientWidth - r.right, bottomGap: innerHeight - r.bottom};
+    });
+    if (position.fixed !== "fixed" || position.left < 0 || position.top < 0 ||
+        position.rightGap < 0 || position.rightGap > 26 || position.bottomGap < 0 || position.bottomGap > 26) {
+      throw new Error(`Floating avatar is outside the bottom-right corner: ${JSON.stringify(position)}`);
+    }
+    await widget.getByRole("button", {name: "Minimize avatar", exact: true}).click({timeout: 10000});
+    await page.locator(".spatius-avatar-canvas canvas").waitFor({state: "hidden"});
+    const minimized = await page.evaluate(() => {
+      const canvas = document.querySelector(".spatius-avatar-canvas canvas");
+      const audio = document.querySelector("audio");
+      const r = canvas?.getBoundingClientRect();
+      return {sameCanvas: canvas === window.__verifiedAvatarCanvas,
+        sameAudio: audio === window.__verifiedAvatarAudio, width: r?.width, height: r?.height,
+        playback: !!audio && !audio.paused && audio.readyState >= 2};
+    });
+    if (!minimized.sameCanvas || !minimized.sameAudio || !minimized.playback ||
+        !(minimized.width > 0) || !(minimized.height > 0)) {
+      throw new Error(`Minimize interrupted the renderer or audio: ${JSON.stringify(minimized)}`);
+    }
+    await widget.getByRole("button", {name: "Expand avatar", exact: true}).click({timeout: 10000});
+    await page.locator(".spatius-avatar-canvas canvas").waitFor({state: "visible"});
+    if (!await page.evaluate(() => document.querySelector(".spatius-avatar-canvas canvas") === window.__verifiedAvatarCanvas)) {
+      throw new Error("Expanding the widget recreated the avatar canvas");
+    }
+    await page.screenshot({path: "/tmp/diag2/live-floating-widget.png"});
+    console.log("✓ Widget stays in the corner; minimize/expand keeps the canvas mounted and remote audio playing");
+
+    console.log("9. Testing end call with Playwright user click (before preview expiry)...");
     const timerText = await page.evaluate(() => {
       return document.querySelector(".timer-digits")?.textContent?.trim() ?? "";
     });
@@ -266,7 +324,7 @@ async function verifyLiveAvatar() {
     console.log("Post call state:", postCallVisible);
     if (postCallVisible.liveRoomPresent) throw new Error("Live room was not cleaned up after end call");
     if (!postCallVisible.postCallPresent) throw new Error("Post call panel did not appear");
-    console.log("✓ End call cleanly closed session and navigated to post-call panel");
+    console.log("✓ End call cleanly closed session and displayed post-call options");
 
     console.log("\n==========================================");
     console.log("✓ SYNTHETIC-MEDIA PREVIEW CHECKS PASSED!");

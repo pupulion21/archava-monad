@@ -78,7 +78,25 @@ export interface SelectedWalletInfo {
 
 let activeSelectedWallet: SelectedWalletInfo | null = null;
 let walletEpoch = 0;
+let connectionGeneration = 0;
+let restorationAllowed = true;
+const DISCONNECTED_STORAGE_KEY = "archava_wallet_disconnected_v1";
 const walletChangeListeners = new Set<(wallet: SelectedWalletInfo | null) => void>();
+
+/** A manual sign-out must survive a reload even if an extension stays authorized. */
+export function canRestoreWallet(): boolean {
+  if (!restorationAllowed) return false;
+  try {
+    return typeof window === "undefined" || window.sessionStorage.getItem(DISCONNECTED_STORAGE_KEY) !== "true";
+  } catch {
+    return restorationAllowed;
+  }
+}
+
+export function allowWalletRestoration(): void {
+  restorationAllowed = true;
+  try { window.sessionStorage.removeItem(DISCONNECTED_STORAGE_KEY); } catch { /* Storage may be unavailable. */ }
+}
 
 export function getWalletEpoch(): number {
   return walletEpoch;
@@ -122,7 +140,12 @@ export function getSelectedWalletProvider(): EthereumProvider | null {
   return activeSelectedWallet?.provider ?? null;
 }
 
-export function disconnectWallet(): void {
+export function disconnectWallet(options: { remember?: boolean } = {}): void {
+  connectionGeneration++;
+  if (options.remember) {
+    restorationAllowed = false;
+    try { window.sessionStorage.setItem(DISCONNECTED_STORAGE_KEY, "true"); } catch { /* Keep the in-memory preference. */ }
+  }
   setSelectedWallet(null);
 }
 
@@ -155,6 +178,9 @@ export const MONAD_PRIVY_CHAIN = {
 export function getEthereumProvider(): EthereumProvider {
   if (activeSelectedWallet?.provider) {
     return activeSelectedWallet.provider;
+  }
+  if (!canRestoreWallet()) {
+    throw new ContextAbortedError("Wallet is disconnected from Archava. Connect again to continue.");
   }
   const ethereum = typeof window !== "undefined" ? window.ethereum : undefined;
   if (!ethereum) {
@@ -208,6 +234,7 @@ export function normalizeChainId(raw: unknown): number {
  * Connects to external wallet via eth_requestAccounts and retrieves account and chain.
  */
 export async function connectExternalWallet(): Promise<{ address: string; chainId: number }> {
+  const generation = connectionGeneration;
   const ethereum = (typeof window !== "undefined" ? window.ethereum : undefined) || getEthereumProvider();
   if (!ethereum) {
     throw new Error("No Web3 wallet found. Install a wallet such as MetaMask or Rabby.");
@@ -229,6 +256,11 @@ export async function connectExternalWallet(): Promise<{ address: string; chainI
   const address = getAddress(accounts[0]);
   const rawChainId = await ethereum.request({ method: "eth_chainId" });
   const chainId = normalizeChainId(rawChainId);
+
+  if (generation !== connectionGeneration) {
+    throw new ContextAbortedError("Wallet connection was cancelled. Connect again to continue.");
+  }
+  allowWalletRestoration();
 
   setSelectedWallet({
     provider: ethereum,

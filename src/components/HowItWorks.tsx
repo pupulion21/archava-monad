@@ -33,8 +33,8 @@ export function HowItWorks() {
           <div className="section-badge-title">
             <span className="section-kicker">02 // PROTOCOL WORKFLOW</span>
             <h2 className="section-main-heading">
-              Three Steps. <br />
-              <em className="gradient-accent">Zero Friction Access.</em>
+              Three Steps <br />
+              <em className="gradient-accent">Zero Friction Access</em>
             </h2>
           </div>
           <p className="section-subtext">

@@ -265,7 +265,7 @@ export function DeveloperAccess({ wallet, contractConnected, onClose }: Develope
         <header className="developer-access-head">
           <div className="developer-access-title-row">
             <h2 id="developer-access-title" className="developer-access-title">
-              Developer access<span className="brand-period">.</span>
+              Developer access
             </h2>
             <span className="developer-access-tag">API KEYS</span>
           </div>

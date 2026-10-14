@@ -29,3 +29,4 @@ s03-repro-*
 .minute-test-*
 .session-test-*
 diag-*.mjs
+video-demo

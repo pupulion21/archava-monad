@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BriefcaseBusiness, KeyRound, Mic, Wallet, X } from "lucide-react";
+import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import {
   connectWallet,
   endAvatarSession,
@@ -26,8 +27,10 @@ import {
   disconnectWallet,
   getWalletEpoch,
   onSelectedWalletChange,
+  canRestoreWallet,
 } from "./lib/wallet";
 import { usePrivyController } from "./lib/privy";
+import { logoutDeveloper } from "./lib/developer";
 import { operationController, type OperationLock } from "./lib/operationLock";
 import {
   isPreviewAvailable,
@@ -40,11 +43,14 @@ import { useScrollReveal } from "./lib/motion";
 import { VideoHero } from "./components/VideoHero";
 import { CyberMarquee } from "./components/CyberMarquee";
 import { AvatarCatalog } from "./components/AvatarCatalog";
+import { LiveRoom } from "./components/LiveRoom";
+import { AvatarLauncher } from "./components/AvatarLauncher";
 import { DigitalFrontierSection } from "./components/DigitalFrontierSection";
 import { BusinessSection } from "./components/BusinessSection";
 import { DeveloperAccess } from "./components/DeveloperAccess";
 import { BuildPage } from "./components/BuildPage";
 import { FeedbackToast } from "./components/FeedbackToast";
+import { WalletControls } from "./components/WalletControls";
 
 async function prepareAvatar(config: AppConfig | null): Promise<void> {
   if (config?.avatarProvider !== "spatius") return;
@@ -68,6 +74,7 @@ export default function App() {
   const quoteRequest = useRef(0);
   const creditRequest = useRef(0);
   const [session, setSession] = useState<AvatarSession | null>(null);
+  const [avatarMinimized, setAvatarMinimized] = useState(false);
   const sessionRef = useRef(session);
   sessionRef.current = session;
   const [developerOpen, setDeveloperOpen] = useState(false);
@@ -78,23 +85,43 @@ export default function App() {
   const [nextSteps, setNextSteps] = useState(false);
   const [lastCallPaid, setLastCallPaid] = useState(false);
   const [currentWalletEpoch, setCurrentWalletEpoch] = useState(() => getWalletEpoch());
+  const [walletAction, setWalletAction] = useState<"connect" | "disconnect" | "">("");
+  const walletActionInProgress = useRef(false);
+
+  const clearWalletState = useCallback(() => {
+    operationController.invalidate("walletDisconnected");
+    creditRequest.current++;
+    quoteRequest.current++;
+    const lock = operationController.getCurrentLock();
+    if (lock && lock.kind !== "preview") lock.release();
+    setLoading(current => current === "preview" ? current : "");
+    setWallet("");
+    setCredits(null);
+    setDeveloperOpen(false);
+    setTxHash("");
+    const current = sessionRef.current;
+    if (current && !current.preview) {
+      sessionRef.current = null;
+      setSession(null);
+      setNextSteps(false);
+      void endAvatarSession(current.ticket).catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     return onSelectedWalletChange((selected) => {
       setCurrentWalletEpoch(getWalletEpoch());
       if (!selected) {
-        setWallet("");
-        setCredits(null);
-        setDeveloperOpen(false);
+        clearWalletState();
       } else if (selected.address) {
         setWallet(selected.address);
       }
     });
-  }, []);
+  }, [clearWalletState]);
 
   // Synchronize wallet state when Privy authenticates
   useEffect(() => {
-    if (privy.isConfigured && privy.authenticated && privy.walletAddress) {
+    if (privy.isConfigured && privy.authenticated && privy.walletAddress && canRestoreWallet() && getSelectedWallet()?.type === "privy") {
       if (wallet.toLowerCase() !== privy.walletAddress.toLowerCase()) {
         setWallet(privy.walletAddress);
       }
@@ -139,13 +166,13 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     // Don't auto-read window.ethereum if a wallet is already selected (e.g. Privy)
-    if (getSelectedWallet()) return;
+    if (getSelectedWallet() || !canRestoreWallet()) return;
     // Reuse a wallet already authorized by its extension; never open a prompt on load.
     void window.ethereum?.request({ method: "eth_accounts" }).then((accounts) => {
       if (cancelled || !Array.isArray(accounts)) return;
       const address = accounts[0];
       if (typeof address === "string" && /^0x[a-fA-F0-9]{40}$/.test(address)) {
-        if (!getSelectedWallet()) {
+        if (!getSelectedWallet() && canRestoreWallet()) {
           setSelectedWallet({
             provider: window.ethereum!,
             address,
@@ -231,9 +258,6 @@ export default function App() {
     void endAvatarSession(closing.ticket)
       .then(() => { if (!closing.preview && wallet && config) void refreshCredits(wallet, config); })
       .catch(() => {});
-    window.setTimeout(() => {
-      document.getElementById("post-call-panel")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 120);
   }, [wallet, config]);
 
   const refreshCredits = useCallback(async (address: string, appConfig: AppConfig) => {
@@ -275,6 +299,8 @@ export default function App() {
   useEffect(() => {
     return subscribeWalletEvents({
       onAccountsChanged(accounts) {
+        // An authorized extension can emit events after app-level sign-out.
+        if (!getSelectedWallet() && !canRestoreWallet()) return;
         operationController.invalidate("accountsChanged");
         creditRequest.current++;
         quoteRequest.current++;
@@ -303,6 +329,7 @@ export default function App() {
         setTxHash("");
       },
       onChainChanged(newChainId) {
+        if (!getSelectedWallet() && !canRestoreWallet()) return;
         operationController.invalidate("chainChanged");
         creditRequest.current++;
         quoteRequest.current++;
@@ -313,6 +340,7 @@ export default function App() {
         }
       },
       onDisconnect() {
+        if (!getSelectedWallet() && !canRestoreWallet()) return;
         operationController.invalidate("disconnect");
         disconnectWallet();
         creditRequest.current++;
@@ -353,6 +381,9 @@ export default function App() {
   }, [wallet, config?.contractAddress]);
 
   const handleConnect = async () => {
+    if (walletActionInProgress.current || !privy.isReady || operationController.isLocked()) return;
+    walletActionInProgress.current = true;
+    setWalletAction("connect");
     setError("");
     setLoading("connect");
     sounds.playClick();
@@ -367,7 +398,34 @@ export default function App() {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Wallet connection rejected");
     } finally {
+      walletActionInProgress.current = false;
+      setWalletAction("");
       setLoading("");
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (walletActionInProgress.current) return;
+    walletActionInProgress.current = true;
+    setWalletAction("disconnect");
+    setError("");
+    sounds.playClick();
+    clearWalletState();
+    disconnectWallet({ remember: true });
+
+    try {
+      const results = await Promise.allSettled([
+        privy.isConfigured ? privy.logout() : Promise.resolve(),
+        logoutDeveloper(AbortSignal.timeout(5000)),
+      ]);
+      if (results[0].status === "rejected") {
+        setError("Wallet disconnected from Archava, but login sign-out failed. Try Disconnect again from the account popup.");
+      } else if (results[1].status === "rejected") {
+        setError("Wallet disconnected. The developer session could not be cleared; reconnect and sign out of the dashboard when the API is available.");
+      }
+    } finally {
+      walletActionInProgress.current = false;
+      setWalletAction("");
     }
   };
 
@@ -466,7 +524,12 @@ export default function App() {
   };
 
   const scrollToCatalog = useCallback(() => {
-    document.getElementById(sessionRef.current ? "live-avatar-room" : "catalog-section")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "center" });
+    if (sessionRef.current) {
+      setAvatarMinimized(false);
+      document.getElementById("live-avatar-room")?.focus({ preventScroll: true });
+      return;
+    }
+    document.getElementById("catalog-section")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "center" });
   }, []);
 
   const scrollToBusiness = useCallback(() => {
@@ -507,6 +570,7 @@ export default function App() {
         void endAvatarSession(next.ticket).catch(() => {});
         return;
       }
+      setAvatarMinimized(false);
       setSession(next);
       sounds.playSuccess();
     } catch (cause) {
@@ -522,22 +586,13 @@ export default function App() {
   };
 
   const handleTryPreview = async () => {
-    console.log("[DEBUG handleTryPreview] called!", {
-      previewAvailable,
-      hasSession: Boolean(session),
-      supportsRendering: supportsAvatarRendering(config),
-      config,
-    });
     if (!previewAvailable || session) {
-      console.log("[DEBUG handleTryPreview] bailed out due to !previewAvailable || session", { previewAvailable, session });
       return;
     }
     setError("");
     setNextSteps(false);
     if (!supportsAvatarRendering(config)) {
-      console.log("[DEBUG handleTryPreview] bailed out due to !supportsAvatarRendering");
       setError(SPATIUS_UNSUPPORTED_MESSAGE);
-      scrollToCatalog();
       return;
     }
     // Set synchronously so a rapid second click cannot open a second room: the
@@ -553,16 +608,15 @@ export default function App() {
       const warmPromise = warmAvatar(config);
       const next = await startAnonymousPreview();
       setError("");
+      setAvatarMinimized(false);
       setSession(next);
       sounds.playSuccess();
-      window.setTimeout(scrollToCatalog, 80);
       await warmPromise;
     } catch (cause) {
       console.error("[App] Preview opening error:", cause);
       if (!sessionRef.current) {
         setError(previewErrorMessage(cause));
       }
-      scrollToCatalog();
     } finally {
       previewLock.release();
       if (!operationController.isLocked()) {
@@ -596,6 +650,29 @@ export default function App() {
   const previewSupported = supportsAvatarRendering(config);
   const openingLabel = avatarStatus === "ready" ? "Connecting live room…" : "Preparing Ava…";
   const feedback = <FeedbackToast message={error} onDismiss={() => setError("")} onRetry={configStatus === "error" ? () => void loadConfig() : undefined} />;
+  const avatarWidget = session && (
+    <LiveKitRoom
+      key={session.ticket}
+      token={session.token}
+      serverUrl={session.serverUrl}
+      connect={session.avatarProvider !== "spatius"}
+      audio={true}
+      video={false}
+      options={session.avatarProvider === "spatius" ? { singlePeerConnection: false } : undefined}
+      onDisconnected={closeSession}
+    >
+      <RoomAudioRenderer />
+      <LiveRoom session={session} minimized={avatarMinimized} onToggleMinimized={() => setAvatarMinimized(value => !value)} onClose={closeSession} />
+    </LiveKitRoom>
+  );
+  const avatarLauncher = !session && (
+    <AvatarLauncher
+      label={configStatus === "loading" ? "Checking Ava…" : loading === "preview" ? openingLabel : !previewSupported ? "Browser not supported" : previewAvailable ? "Talk to Ava" : "Check availability"}
+      hint={previewAvailable ? "Free preview · Voice & avatar" : "Live avatar conversation"}
+      disabled={Boolean(loading) || configStatus === "loading" || !previewSupported}
+      onOpen={previewAvailable ? () => void handleTryPreview() : () => void loadConfig()}
+    />
+  );
 
   if (isBuildPage) {
     return (
@@ -622,6 +699,8 @@ export default function App() {
           onError={setError}
         />
         {feedback}
+        {avatarWidget}
+        {avatarLauncher}
         {developerOpen && wallet && (
           <DeveloperAccess
             key={wallet.toLowerCase()}
@@ -644,7 +723,18 @@ export default function App() {
           previewSupported={previewSupported}
           previewSeconds={config?.previewSeconds}
           openingLabel={openingLabel}
-          onCopyError={setError}
+          walletControls={
+            <WalletControls
+              wallet={wallet}
+              authenticated={privy.authenticated}
+              privyConfigured={privy.isConfigured}
+              ready={privy.isReady}
+              action={walletAction}
+              onConnect={() => void handleConnect()}
+              onDisconnect={() => void handleDisconnect()}
+              onError={setError}
+            />
+          }
           onRentClick={handleScrollToRent}
           previewEnabled={previewAvailable && !session}
           sessionActive={Boolean(session)}
@@ -668,7 +758,7 @@ export default function App() {
           onConnect={handleConnect}
           onStartSession={handleStart}
           onTryPreview={handleTryPreview}
-          onCloseSession={closeSession}
+          onShowSession={scrollToCatalog}
           onOpenDeveloper={openDeveloper}
           onRetryConfig={() => void loadConfig()}
         />
@@ -687,7 +777,7 @@ export default function App() {
                   <X size={14} />
                 </button>
               </div>
-              <h2 className="post-call-title">Thanks for talking to Ava.</h2>
+              <h2 className="post-call-title">Thanks for talking to Ava</h2>
               <div className="post-call-actions">
                 {lastCallPaid && wallet && credits?.active && credits.reservedSeconds === 0 ? (
                   <button
@@ -742,6 +832,8 @@ export default function App() {
         />
       </main>
       {feedback}
+      {avatarWidget}
+      {avatarLauncher}
 
       {/*
         `key={wallet}` remounts the dashboard on an account switch, so cached

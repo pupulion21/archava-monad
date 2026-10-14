@@ -25,7 +25,7 @@ function Root() {
           // Use the login methods enabled for this app in the Privy Dashboard.
           appearance: {
             theme: "dark",
-            accentColor: "#836EF9",
+            accentColor: "#6E54FF",
           },
         }}
       >

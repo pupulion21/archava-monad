@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Check, Code2, Copy, Info, KeyRound, Volume2, VolumeX } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowUpRight, Info, KeyRound, Volume2, VolumeX } from "lucide-react";
 import { sounds } from "../lib/sound";
 import { previewDurationLabel, SPATIUS_UNSUPPORTED_MESSAGE } from "../lib/preview";
 
@@ -9,7 +9,7 @@ interface VideoHeroProps {
   previewSupported: boolean;
   previewSeconds?: number;
   openingLabel: string;
-  onCopyError: (message: string) => void;
+  walletControls: ReactNode;
   onRentClick: () => void;
   previewEnabled: boolean;
   sessionActive: boolean;
@@ -24,7 +24,7 @@ export function VideoHero({
   previewSupported,
   previewSeconds,
   openingLabel,
-  onCopyError,
+  walletControls,
   onRentClick,
   previewEnabled,
   sessionActive,
@@ -33,9 +33,7 @@ export function VideoHero({
   onOpenDeveloper,
 }: VideoHeroProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [copied, setCopied] = useState(false);
   const [soundActive, setSoundActive] = useState(sounds.isEnabled());
-  const shortAddress = (address: string) => address.slice(0, 6) + "…" + address.slice(-4);
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -52,18 +50,6 @@ export function VideoHero({
       cancelAnimationFrame(frame);
     };
   }, []);
-
-  const copyWallet = async () => {
-    if (!wallet) return;
-    try {
-      await navigator.clipboard.writeText(wallet);
-      setCopied(true);
-      sounds.playSuccess();
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      onCopyError("Couldn't copy the wallet address. Please allow clipboard access and try again.");
-    }
-  };
 
   const explore = () => {
     sounds.playClick();
@@ -119,20 +105,12 @@ export function VideoHero({
               <Info size={15} />
             </a>
             {wallet && (
-              <button type="button" className="nav-dev-btn" onClick={onOpenDeveloper}>
+              <button type="button" className="nav-dev-btn" onClick={onOpenDeveloper} aria-label="Developer access">
                 <KeyRound size={14} />
                 <span>Developer</span>
               </button>
             )}
-            {wallet ? (
-              <button type="button" className="hero-wallet-pill" onClick={() => void copyWallet()} title="Copy wallet address">
-                <span className="live-dot-green" />
-                <span className="mono-addr">{shortAddress(wallet)}</span>
-                {copied ? <Check size={13} /> : <Copy size={13} />}
-              </button>
-            ) : (
-              <a className="hero-connect-pill" href="/build#access"><Code2 size={15} /><span>Minutes &amp; API</span></a>
-            )}
+            {walletControls}
           </div>
         </header>
 
@@ -153,7 +131,7 @@ export function VideoHero({
             <div className="scale-indicator"><span className="scale-line" /><span className="scale-num">001</span></div>
           </div>
           <div className="hud-empower-box">
-            <h2 className="hud-headline">A real conversation.<br />A face to remember.</h2>
+            <h2 className="hud-headline">A real conversation<br />A face to remember</h2>
             <button type="button" className="hud-next-btn" onClick={explore}>
               <span>Meet the avatar</span><span className="next-bar" />
             </button>
@@ -174,7 +152,7 @@ export function VideoHero({
 
         <div className="hero-demo-entry">
           <div className="hero-center-typography">
-            <h1 className="hero-massive-title"><span>TALK TO</span><span>AVA.</span></h1>
+            <h1 className="hero-massive-title"><span>TALK TO</span><span>AVA</span></h1>
             <span className="hero-sub-kicker">ARCHAVA / ONE LIVE AI AVATAR, OPEN TO EVERYONE</span>
           </div>
 
@@ -191,9 +169,9 @@ export function VideoHero({
               <span>{sessionActive ? "Back to Ava" : !previewSupported ? "Browser not supported" : previewLoading ? openingLabel : configStatus === "loading" ? "Checking availability…" : previewEnabled ? "Talk to Ava" : "Explore avatar"}</span><ArrowUpRight size={16} />
             </button>
             <span className="hero-preview-hint" id="hero-demo-note">
-              {sessionActive ? "Your conversation is active. Mic and end-call controls stay on screen." : !previewSupported ? SPATIUS_UNSUPPORTED_MESSAGE : configStatus === "loading" ? "Checking the live demo…" : previewEnabled ? `${previewDurationLabel(previewSeconds)} · microphone needed` : "Live demo currently offline. Explore the avatar or check availability below."}
+              {sessionActive ? "Ava stays in the bottom-right corner while you explore." : !previewSupported ? SPATIUS_UNSUPPORTED_MESSAGE : configStatus === "loading" ? "Checking the live demo…" : previewEnabled ? `${previewDurationLabel(previewSeconds)} · microphone needed` : "Live demo currently offline. Explore the avatar or check availability below."}
             </span>
-            <span className="hero-access-hint">No wallet or sign-in for the demo. End anytime.</span>
+            <span className="hero-access-hint">No wallet or sign-in · End anytime</span>
           </div>
         </div>
         <span className="hero-chain-label">HACKATHON DEMO · AI-GENERATED VISUALS</span>

@@ -19,6 +19,8 @@ import {
   getEthereumProvider,
   onSelectedWalletChange,
   ContextAbortedError,
+  canRestoreWallet,
+  allowWalletRestoration,
 } from "./wallet.ts";
 import {
   waitForCreditSync,
@@ -355,6 +357,55 @@ test("setSelectedWallet and getSelectedWallet manage active wallet and provider 
   assert.equal(getSelectedWallet(), null);
   assert.equal(getSelectedWalletProvider(), null);
   assert.equal(getWalletEpoch(), initialEpoch + 3);
+});
+
+test("manual disconnect stays signed out until an explicit successful connection", async () => {
+  const previousWindow = (globalThis as any).window;
+  const storage = new Map<string, string>();
+  setupMockEthereum({ eth_requestAccounts: () => [TEST_WALLET], eth_chainId: () => "0x279f" });
+  (globalThis as any).window.sessionStorage = {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+    removeItem: (key: string) => storage.delete(key),
+  };
+  try {
+    allowWalletRestoration();
+    await connectExternalWallet();
+    disconnectWallet({ remember: true });
+    assert.equal(getSelectedWallet(), null);
+    assert.equal(canRestoreWallet(), false);
+    assert.equal(storage.get("archava_wallet_disconnected_v1"), "true");
+    assert.throws(() => getEthereumProvider(), /Wallet is disconnected from Archava/);
+    await connectExternalWallet();
+    assert.equal(getSelectedWallet()?.address, TEST_WALLET);
+    assert.equal(canRestoreWallet(), true);
+    assert.equal(storage.size, 0);
+  } finally {
+    allowWalletRestoration();
+    disconnectWallet();
+    (globalThis as any).window = previousWindow;
+  }
+});
+
+test("a delayed external connection cannot restore a wallet after sign-out", async () => {
+  const previousWindow = (globalThis as any).window;
+  let authorize!: (accounts: string[]) => void;
+  setupMockEthereum({
+    eth_requestAccounts: () => new Promise<string[]>(resolve => { authorize = resolve; }),
+    eth_chainId: () => "0x279f",
+  });
+  try {
+    const connecting = connectExternalWallet();
+    disconnectWallet({ remember: true });
+    authorize([TEST_WALLET]);
+    await assert.rejects(connecting, /Wallet connection was cancelled/);
+    assert.equal(getSelectedWallet(), null);
+    assert.equal(canRestoreWallet(), false);
+  } finally {
+    allowWalletRestoration();
+    disconnectWallet();
+    (globalThis as any).window = previousWindow;
+  }
 });
 
 test("MONAD_PRIVY_CHAIN adheres to Monad Testnet 10143 specifications", async () => {

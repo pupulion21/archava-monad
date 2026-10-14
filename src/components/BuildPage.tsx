@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { formatUnits } from "ethers";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Clock3, Code2, Copy, Database, ExternalLink, KeyRound, Mic2, RefreshCw, ShieldCheck, Wallet, Zap } from "lucide-react";
 import { type AppConfig, type PackQuote, type CreditStatus, type IndexedPurchase, type PurchaseHistorySync, getPurchaseHistory, getPendingPurchase } from "../lib/rental";
 
@@ -148,7 +149,7 @@ export function BuildPage({
     <main className="build-page" id="top" tabIndex={-1}>
       <div className="build-page-grid" aria-hidden="true" />
       <header className="build-nav">
-        <a className="build-brand" href="/" aria-label="Archava home">ARCHAVA<span>.</span><small>BUILD</small></a>
+        <a className="build-brand" href="/" aria-label="Archava home">ARCHAVA<small>BUILD</small></a>
         <nav aria-label="Build page navigation">
           <a href="#access">Onchain access</a>
           <a href="#history">Purchase history</a>
@@ -160,7 +161,7 @@ export function BuildPage({
       <section className="build-hero" aria-labelledby="build-title">
         <div className="build-hero-copy">
           <span className="build-kicker"><span className="build-status-dot" /> ONE AVATAR / TWO WAYS IN</span>
-          <h1 id="build-title">Bring Ava<br /><em>into your world.</em></h1>
+          <h1 id="build-title">Bring Ava<br /><em>into your world</em></h1>
           <p>
             Explore Ava in the browser. When the live preview is online, talk to her without a wallet. Buy Ava minutes with a wallet to keep talking or use an Archava API key from your own backend.
           </p>
@@ -190,7 +191,7 @@ export function BuildPage({
       <section className="build-section build-access" id="access" aria-labelledby="access-title" data-reveal>
         <div className="build-section-intro">
           <span className="build-section-index">01 / ONCHAIN ACCESS</span>
-          <h2 id="access-title">Your minutes.<br /><span>Your Ava sessions.</span></h2>
+          <h2 id="access-title">Your minutes<br /><span>Your Ava sessions</span></h2>
           <p>Minute packs belong to a wallet. Archava reads the wallet's rental events and active access from Monad Testnet, then subtracts allocated room time from its server ledger. Your website calls and API key share one balance.</p>
         </div>
         <div className="build-access-card">
@@ -220,7 +221,7 @@ export function BuildPage({
       <section className="build-section build-history" id="history" aria-labelledby="history-title" data-reveal>
         <div className="build-section-intro">
           <span className="build-section-index">02 / PURCHASE HISTORY</span>
-          <h2 id="history-title">Indexed onchain.<br /><span>Powered by Envio.</span></h2>
+          <h2 id="history-title">Indexed onchain<br /><span>Powered by Envio</span></h2>
           <p>
             Purchase events from ArchavaRentalV2 are indexed continuously by Envio HyperIndex on Monad Testnet. Review your past package rentals, verified transaction hashes, and real-time indexing status.
           </p>
@@ -258,7 +259,7 @@ export function BuildPage({
                       <span className="build-history-pill build-ready">INDEXED</span>
                     </div>
                     <div className="build-history-item-details">
-                      <span>{(Number(item.amountPaid) / 1e6).toFixed(0)} mUSDT · Pack #{item.packageId}</span>
+                      <span>{formatUnits(item.amountPaid, 6)} mUSDT · Pack #{item.packageId}</span>
                       <span>{new Date(item.timestamp * 1000).toLocaleString()} · Block #{item.blockNumber}</span>
                       <a href={explorer + item.transactionHash} target="_blank" rel="noreferrer">
                         {item.transactionHash.slice(0, 10)}…{item.transactionHash.slice(-6)} <ExternalLink size={10} />
@@ -299,7 +300,7 @@ export function BuildPage({
       <section className="build-section build-api" id="api" aria-labelledby="api-title" data-reveal>
         <div className="build-section-intro">
           <span className="build-section-index">03 / SESSION API</span>
-          <h2 id="api-title">One request.<br /><span>One live Ava.</span></h2>
+          <h2 id="api-title">One request<br /><span>One live Ava</span></h2>
           <p>Archava creates the voice and avatar room behind one session API. Your backend holds the Archava key; your browser receives only the short lived room token and public avatar identifiers.</p>
           <div className="build-api-cta">
             {!wallet ? (
@@ -318,7 +319,7 @@ export function BuildPage({
       </section>
 
       <section className="build-contract-note" aria-labelledby="contract-note-title" data-reveal>
-        <div><span className="build-section-index">04 / CONTRACT INTERFACE</span><h2 id="contract-note-title">Minutes bought onchain.</h2><p>The contract emits each wallet's purchased minutes and access expiry. Archava meters room time offchain and shares the remaining balance with the wallet and its API keys.</p></div>
+        <div><span className="build-section-index">04 / CONTRACT INTERFACE</span><h2 id="contract-note-title">Minutes bought onchain</h2><p>The contract emits each wallet's purchased minutes and access expiry. Archava meters room time offchain and shares the remaining balance with the wallet and its API keys.</p></div>
         <div className="contract-code"><button className="code-copy-btn" type="button" onClick={() => void copyExample("contract")} aria-label="Copy contract interface">{copied === "contract" ? <Check size={15} /> : <Copy size={15} />}{copied === "contract" ? "Copied" : "Copy interface"}</button><pre tabIndex={0} role="region" aria-label="Minute pack contract interface"><code>{packAbi}</code></pre></div>
       </section>
 

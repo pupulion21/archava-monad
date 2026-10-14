@@ -1,10 +1,13 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import {
   MONAD_CHAIN_ID,
   setSelectedWallet,
   getSelectedWallet,
   connectExternalWallet,
+  disconnectWallet,
+  canRestoreWallet,
+  allowWalletRestoration,
   type EthereumProvider,
 } from "../lib/wallet";
 import { operationController } from "../lib/operationLock";
@@ -19,6 +22,8 @@ export function PrivyWalletBridge({ children, onWalletChange }: PrivyWalletBridg
   const { ready: privyReady, authenticated, user, login, logout } = usePrivy();
   const { wallets, ready: walletsReady } = useWallets();
   const [syncedAddress, setSyncedAddress] = useState<string>("");
+  const logoutGeneration = useRef(0);
+  const loginRequested = useRef(false);
 
   const userEmail = useMemo(() => {
     return user?.email?.address || (user?.google as any)?.email || undefined;
@@ -38,6 +43,11 @@ export function PrivyWalletBridge({ children, onWalletChange }: PrivyWalletBridg
       }
       return;
     }
+    if (loginRequested.current) {
+      allowWalletRestoration();
+      loginRequested.current = false;
+    }
+    if (!canRestoreWallet()) return;
 
     // Identify the primary wallet for the authenticated user
     const primaryWallet =
@@ -50,11 +60,12 @@ export function PrivyWalletBridge({ children, onWalletChange }: PrivyWalletBridg
     }
 
     let active = true;
+    const generation = logoutGeneration.current;
 
     void (async () => {
       try {
         const ethProvider = (await primaryWallet.getEthereumProvider()) as EthereumProvider;
-        if (!active) return;
+        if (!active || generation !== logoutGeneration.current || !canRestoreWallet()) return;
 
         // Ensure Monad Testnet is selected
         if (typeof primaryWallet.switchChain === "function") {
@@ -65,7 +76,7 @@ export function PrivyWalletBridge({ children, onWalletChange }: PrivyWalletBridg
           }
         }
 
-        if (!active) return;
+        if (!active || generation !== logoutGeneration.current || !canRestoreWallet()) return;
 
         setSelectedWallet({
           provider: ethProvider,
@@ -88,12 +99,19 @@ export function PrivyWalletBridge({ children, onWalletChange }: PrivyWalletBridg
   }, [privyReady, walletsReady, authenticated, user?.wallet?.address, wallets, onWalletChange]);
 
   const handleLogout = useCallback(async () => {
-    setSelectedWallet(null);
+    loginRequested.current = false;
+    logoutGeneration.current++;
+    disconnectWallet({ remember: true });
     operationController.invalidate("logout");
     setSyncedAddress("");
     onWalletChange?.("");
     await logout();
   }, [logout, onWalletChange]);
+
+  const handleLogin = useCallback(() => {
+    loginRequested.current = true;
+    login();
+  }, [login]);
 
   const handleConnectExternal = useCallback(async () => {
     const { address } = await connectExternalWallet();
@@ -110,11 +128,11 @@ export function PrivyWalletBridge({ children, onWalletChange }: PrivyWalletBridg
       userEmail,
       walletAddress: syncedAddress,
       walletType: authenticated ? "privy" : getSelectedWallet()?.type || "none",
-      login,
+      login: handleLogin,
       logout: handleLogout,
       connectExternal: handleConnectExternal,
     };
-  }, [privyReady, walletsReady, authenticated, userEmail, syncedAddress, login, handleLogout, handleConnectExternal]);
+  }, [privyReady, walletsReady, authenticated, userEmail, syncedAddress, handleLogin, handleLogout, handleConnectExternal]);
 
   return (
     <PrivyContext.Provider value={controllerValue}>

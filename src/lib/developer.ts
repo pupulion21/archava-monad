@@ -187,8 +187,8 @@ export async function fetchDeveloperWallet(): Promise<DeveloperWallet> {
   return developerApi<DeveloperWallet>("/api/developer/me");
 }
 
-export async function logoutDeveloper(): Promise<void> {
-  await developerApi<{ ok: true }>("/api/developer/logout", { method: "POST" });
+export async function logoutDeveloper(signal?: AbortSignal): Promise<void> {
+  await developerApi<{ ok: true }>("/api/developer/logout", { method: "POST", signal });
 }
 
 /**

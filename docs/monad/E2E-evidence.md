@@ -325,3 +325,70 @@ The application consumes the variables listed in `.env.example`. Notable points:
 | Privy login (human-confirmed) | ⏳ Pending operator |
 | Purchase + paid session | ⏳ Pending operator |
 | Railway / Vercel deployment | ⏳ Pending operator |
+
+---
+
+## 11. Floating Ava widget — local verification, 2026-10-14
+
+Ava now opens from a bottom-right launcher on the homepage and `/build`. The
+live video, microphone, timer, and end-call button share one fixed widget mounted
+through a body portal. Scrolling and section navigation keep it in view.
+Minimize hides the video panel while keeping its renderer and LiveKit connection
+mounted; microphone and end-call controls remain available. Opening and closing
+the widget no longer scroll the visitor to the catalog or post-call section.
+
+| Check | Observed result |
+|---|---|
+| `npm test` | 349 passed, 0 failed. The obsolete assertion about the removed inline mobile state pill was removed; floating behavior is covered by browser checks. |
+| `npm run test:ui` | 30/30 passed using isolated room fixtures. Includes launchers on both routes, desktop/tablet/mobile/landscape positioning, section awareness, minimize/expand without remounting, mic controls, expiry in both modes, cleanup, and accessibility. |
+| `npm run build` | Exit 0; Vite build completed in 33.09 s and AvatarKit WASM assets were copied. |
+| Live preview in headed Brave | All 9 checks passed with synthetic microphone media and normal locator clicks. Real avatar pixels rendered on a 358×270 canvas; remote audio had `readyState: 4`. Minimize/expand preserved the canvas and audio elements, retained nonzero canvas dimensions, and kept audio playing. End call ran with 107 seconds left and removed the room. |
+
+Live verification command:
+
+```bash
+ARCHAVA_BROWSER_EXECUTABLE=/usr/bin/brave ARCHAVA_BROWSER_HEADLESS=false \
+  node scripts/verify-live-avatar-session.mjs
+```
+
+Chromium headless attempts did not complete the live controls: one exceeded the
+preview budget and another timed out waiting for click actionability. The passing
+live evidence above is from headed Brave. It does not establish human-confirmed
+audible conversation, wallet acceptance, or a paid session.
+
+This section records the local checks performed before GitHub/Vercel publication.
+The original Archava checkout and deployment were not modified.
+
+## 12. Landing-page wallet controls — local verification, 2026-10-14
+
+The top-right header opens the configured Privy login directly, with an injected
+wallet fallback when Privy is not configured. The single account button shows
+the connected address; clicking it opens a popup with Copy address and Disconnect.
+Escape restores focus to the account button; outside clicks and moving keyboard
+focus out close the popup. Privy and wallet-extension confirmations
+remain user-controlled. No contract source, deployed address, ABI, or package
+pricing changed.
+
+Manual sign-out clears selected-wallet state, cached credit display, and the
+developer dashboard; it calls the existing developer logout endpoint to clear
+the HttpOnly session. A paid room is ended exactly once, while the anonymous
+preview remains available. Pending purchase records are preserved. A tab-scoped
+sign-out preference prevents silent extension restoration after reload. Explicit
+successful reconnect clears that preference; cancelling Privy login retains it.
+Late wallet/provider callbacks cannot restore a signed-out wallet.
+
+| Check | Observed result |
+|---|---|
+| `npm test` | 351 passed, 0 failed, including explicit-disconnect persistence and rejection of delayed external connection completion. |
+| `npm run test:ui` | Final popup run: 44/44 passed. Covers desktop/tablet/mobile controls, copy success/failure, popup focus/Escape/Tab/outside-click dismissal, account-change cleanup, popup accessibility, reload, old provider events, Privy readiness/login cancellation/relogin/logout retry/delayed provider completion, paid-room teardown, wallet-free preview continuity, and existing accessibility checks. |
+| `npm run build` | Popup refinement: exit 0; Vite completed in 31.53 s and AvatarKit WASM assets were copied. |
+| `npx tsc -b`, script syntax, `git diff --check` | Exit 0. |
+
+The UI harness substitutes the Privy SDK and room provider with isolated fixtures
+and does not perform Google login, real wallet signatures, or onchain purchases.
+The popup run exposed a real mobile layering issue: the hero HUD intercepted
+clicks on the account popup. Raising the navbar above the hero HUD fixed it.
+The outside-click check uses a normal locator click on the hero's outer padding,
+avoiding the title's transformed hit area. The complete rerun against the final
+source passed without forced clicks or JavaScript clicks.
+These results describe the local verification performed before the UI release.

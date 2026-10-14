@@ -20,10 +20,10 @@
   "hosting": {
     "frontend": {
       "provider": "vercel",
-      "projectId": "",
-      "projectName": "",
-      "productionDomain": "",
-      "comment": "Will be set after Vercel project is provisioned"
+      "projectId": "prj_yu6rUMt9vgtgiGqPqKDpJ58YQevI",
+      "projectName": "archava-monad",
+      "productionDomain": "archava-monad.vercel.app",
+      "comment": "Verified against the existing independent Monad Vercel project before the UI release"
     },
     "backend": {
       "provider": "railway",
@@ -60,5 +60,5 @@
       "state.scope"
     ]
   },
-  "lastUpdated": "2026-10-13T14:50:35Z"
+  "lastUpdated": "2026-10-14T05:25:13Z"
 }

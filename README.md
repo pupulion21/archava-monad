@@ -27,6 +27,7 @@ This is an **independent deployment** specifically for Monad Metropolis. It uses
 
 ### 1. Core Live Voice & Avatar Flow
 - **Spatius Live Avatar & Gemini Realtime Voice**: In-browser video rendering via Spatius AvatarKit Web SDK combined with Gemini multimodal live voice agent streaming through LiveKit Cloud.
+- **Floating Ava Widget**: Open Ava from the bottom-right launcher on the homepage or `/build`. The avatar, microphone, and end-call controls stay visible while scrolling; minimizing keeps the room and audio connected.
 - **Dual Flow (Free Preview & Onchain Paid)**:
   - *Anonymous Live Preview*: 120-second session for visitors without needing a wallet, signature, or token.
   - *Onchain Paid Access*: 60-minute and 300-minute packs purchasable using demo mUSDT.
@@ -34,6 +35,8 @@ This is an **independent deployment** specifically for Monad Metropolis. It uses
 - **Durable Metering Ledger**: Offchain single-writer ledger in `data/usage.json` tracking room allocations, minute deductions, and automatic refund of unconsumed minutes upon early disconnect.
 
 ### 2. Track 02 Sponsor: Privy Wallet Integration
+
+- **Landing-page account controls**: Use **Log in / Connect** in the top-right header to open Privy, or **Connect wallet** when Privy is not configured. After connecting, click the address to open a popup with **Copy address** and **Disconnect**. Escape or clicking outside closes the popup. Disconnect survives a reload in the same tab, clears the developer session, ends a paid call, and keeps the wallet-free preview running. Pending purchases remain available for recovery after reconnecting.
 - **Seamless Onboarding**: Integrated `@privy-io/react-auth` supporting email, social login, and automatic Monad embedded EOA creation.
 - **Selected Provider Abstraction (`src/lib/wallet.ts`)**: Unified interface connecting Privy embedded EOAs and external wallets (MetaMask, Rabby) to checkout, demo token faucet, session authorization signatures, and developer dashboard login.
 - **Strict Execution Isolation**: Account and chain switches mid-flow immediately invalidate stale locks, preventing accidental cross-wallet authorization.

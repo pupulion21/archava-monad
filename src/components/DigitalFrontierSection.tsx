@@ -23,8 +23,8 @@ const steps = [
 ] as const;
 
 const headlineLines = [
-  ["Presence", "you", "can", "feel."],
-  ["Conversation", "you", "can", "join."],
+  ["Presence", "you", "can", "feel"],
+  ["Conversation", "you", "can", "join"],
 ];
 
 export function DigitalFrontierSection({ previewReady }: { previewReady: boolean }) {
@@ -36,7 +36,7 @@ export function DigitalFrontierSection({ previewReady }: { previewReady: boolean
       <div className="frontier-container">
         <div className="frontier-heading-wrapper" data-reveal>
           <span className="frontier-section-label">HOW TO TRY ARCHAVA / 001</span>
-          <h2 className="frontier-main-title" aria-label="Presence you can feel. Conversation you can join.">
+          <h2 className="frontier-main-title" aria-label="Presence you can feel, conversation you can join">
             {headlineLines.map((line, lineIndex) => (
               <span className="frontier-title-line" aria-hidden="true" key={lineIndex}>
                 {line.map((word, wordIndex) => (
@@ -50,7 +50,7 @@ export function DigitalFrontierSection({ previewReady }: { previewReady: boolean
             ))}
           </h2>
           <div className="frontier-reflected-title" aria-hidden="true">
-            Presence you can feel.<br />Conversation you can join.
+            Presence you can feel<br />Conversation you can join
           </div>
         </div>
 

@@ -35,8 +35,8 @@ export function TechnologySection() {
         <div className="tech-header-block">
           <span className="section-kicker">03 // SYSTEM ARCHITECTURE</span>
           <h2 className="section-main-heading">
-            Sovereign Intelligence. <br />
-            <em className="gradient-accent">Cryptographic Proof.</em>
+            Sovereign Intelligence <br />
+            <em className="gradient-accent">Cryptographic Proof</em>
           </h2>
           <p className="tech-intro-p">
             Archava combines live generative AI with onchain minute purchases. The server allocates room seconds against the wallet balance in real time.

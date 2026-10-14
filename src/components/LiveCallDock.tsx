@@ -1,31 +1,51 @@
-import { type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ArrowUpRight, Mic, MicOff, PhoneOff } from "lucide-react";
+import { Maximize2, Mic, MicOff, Minus, PhoneOff } from "lucide-react";
 
 interface LiveCallDockProps {
   remaining: string;
   stateLabel: string;
+  preview: boolean;
+  minimized: boolean;
   muted: boolean;
   error: string;
+  children: ReactNode;
+  onToggleMinimized: () => void;
   onToggleMic: () => void;
   onEnd: () => void;
   audioAction?: ReactNode;
 }
 
-export function LiveCallDock({ remaining, stateLabel, muted, error, onToggleMic, onEnd, audioAction }: LiveCallDockProps) {
-  const returnToAvatar = () => {
-    const target = document.getElementById("live-avatar-room");
-    target?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "center" });
-    target?.focus({ preventScroll: true });
-  };
+export function LiveCallDock({ remaining, stateLabel, preview, minimized, muted, error, children, onToggleMinimized, onToggleMic, onEnd, audioAction }: LiveCallDockProps) {
+  const widgetRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const trigger = document.activeElement;
+    const widget = widgetRef.current;
+    widget?.focus({ preventScroll: true });
+    return () => {
+      if (trigger instanceof HTMLElement && trigger.isConnected &&
+          (document.activeElement === document.body || widget?.contains(document.activeElement))) {
+        trigger.focus({ preventScroll: true });
+      }
+    };
+  }, []);
+
   return createPortal(
-    <aside className="live-call-dock" aria-label="Active call controls">
-      <div className="call-dock-status"><span className="live-dot-green" aria-hidden="true" /><span>{stateLabel}</span><span className="call-dock-timer" aria-label="Time remaining">{remaining}</span></div>
+    <aside ref={widgetRef} id="live-avatar-room" tabIndex={-1} className={`live-call-dock${minimized ? " is-minimized" : ""}`} aria-label="Live conversation with Ava">
+      <div className="call-dock-header">
+        <div className="call-dock-title"><span className="live-dot" aria-hidden="true" /><div><h2>Ava</h2><span>{preview ? "Live preview" : "Paid conversation"}</span></div></div>
+        <span className="call-dock-timer timer-digits" aria-label="Time remaining">{remaining}</span>
+        <button type="button" className="call-dock-minimize" onClick={onToggleMinimized} aria-label={minimized ? "Expand avatar" : "Minimize avatar"} aria-expanded={!minimized} aria-controls="ava-floating-content">
+          {minimized ? <Maximize2 size={17} /> : <Minus size={18} />}
+        </button>
+      </div>
+      {/* Keep the renderer mounted while minimized: only its visibility changes. */}
+      <div className="call-dock-content" id="ava-floating-content" aria-hidden={minimized}>{children}</div>
+      <div className="call-dock-status" role="status" aria-live="polite"><span>{stateLabel}</span></div>
       <div className="call-dock-actions">
-        <button type="button" onClick={returnToAvatar} className="call-dock-return">Back to Ava <ArrowUpRight size={16} /></button>
-        <button type="button" onClick={onToggleMic} aria-label={muted ? "Unmute microphone" : "Mute microphone"} aria-pressed={!muted} className="call-dock-mic">{muted ? <MicOff size={18} /> : <Mic size={18} />}<span>{muted ? "Mic off" : "Mic on"}</span></button>
+        <button type="button" onClick={onToggleMic} aria-label={muted ? "Unmute microphone" : "Mute microphone"} aria-pressed={!muted} className={`call-dock-mic mic-control-btn ${muted ? "muted" : "active"}`}>{muted ? <MicOff size={17} /> : <Mic size={17} />}<span>{muted ? "MUTED" : "MIC ON"}</span></button>
         {audioAction}
-        <button type="button" onClick={onEnd} className="call-dock-end" aria-label="End conversation"><PhoneOff size={18} /><span>End call</span></button>
+        <button type="button" onClick={onEnd} className="call-dock-end end-call-btn" aria-label="End conversation"><PhoneOff size={17} /><span>End call</span></button>
       </div>
       {error && <p className="call-dock-error" role="alert">{error}</p>}
     </aside>,

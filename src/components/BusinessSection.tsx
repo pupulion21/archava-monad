@@ -25,7 +25,7 @@ export function BusinessSection({ contactHref, previewEnabled, onTryPreview }: B
       <div className="business-container">
         <div className="business-heading" data-reveal>
           <span className="business-eyebrow">ARCHAVA FOR BUSINESS / CUSTOM INTEGRATION</span>
-          <h2>Give your business<br /><span>a presence.</span></h2>
+          <h2>Give your business<br /><span>a presence</span></h2>
           <div className="business-heading-mark" aria-hidden="true">A<span>✳</span></div>
         </div>
 

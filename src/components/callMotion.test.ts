@@ -11,6 +11,7 @@ import test from "node:test";
 const read = (relative: string) => readFileSync(new URL(`../${relative}`, import.meta.url), "utf8");
 
 const liveRoomSource = read("components/LiveRoom.tsx");
+const callDockSource = read("components/LiveCallDock.tsx");
 const stylesSource = read("styles.css");
 
 /** Agent states LiveKit can report, per @livekit/components-react useVoiceAssistant. */
@@ -71,9 +72,9 @@ test("no CSS rule targets a phase LiveRoom never emits", () => {
   }
 });
 
-test("the agent state pill no longer points at a per-state class", () => {
-  assert.match(liveRoomSource, /className="agent-indicator-pill"/);
-  assert.equal(liveRoomSource.includes("state-${state}"), false);
+test("the agent status does not depend on a per-state CSS class", () => {
+  assert.match(callDockSource, /className="call-dock-status"/);
+  assert.equal(callDockSource.includes("state-${state}"), false);
 });
 
 test("connecting and failed phases still the motion down", () => {
@@ -97,7 +98,7 @@ test("hud corner brackets render with real geometry", () => {
 });
 
 test("the state indicator is announced rather than only moving", () => {
-  assert.match(liveRoomSource, /<div className="floating-agent-state" role="status" aria-live="polite">/);
+  assert.match(callDockSource, /<div className="call-dock-status" role="status" aria-live="polite">/);
 });
 
 test("the scan beam spans the viewport instead of a fixed pixel distance", () => {
@@ -108,10 +109,4 @@ test("the scan beam spans the viewport instead of a fixed pixel distance", () =>
 
 test("motion is still disabled wholesale under prefers-reduced-motion", () => {
   assert.match(stylesSource, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation: none !important/);
-});
-
-test("mobile keeps the state pill and controls clear of each other", () => {
-  const mobile = stylesSource.slice(stylesSource.indexOf("@media (max-width: 520px)"));
-  assert.match(mobile, /\.floating-agent-state/);
-  assert.match(mobile, /\.mini-voice-viz/);
 });
